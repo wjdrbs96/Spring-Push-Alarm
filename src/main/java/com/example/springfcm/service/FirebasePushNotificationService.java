@@ -11,16 +11,14 @@ import com.google.firebase.messaging.WebpushNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
 
 import javax.annotation.PostConstruct;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -33,6 +31,8 @@ public class FirebasePushNotificationService implements PushNotificationService 
 
     @Value("${fcm.account.path}")
     private String accountPath;
+
+    private final RedisTemplate<String, String> redisTemplate;
 
     @PostConstruct
     public void init() {
@@ -62,8 +62,8 @@ public class FirebasePushNotificationService implements PushNotificationService 
 
     @Override
     public void sendPushNotification(PushNotificationRequest pushNotificationRequest) {
-        // 임시 테스트
-        String token = "cYm9R_j7ReuSFz6Z2xZT6r:APA91bFgFquTCqTFXFYDK69kNrS_dRTCxdIPw7frEyG8IfcQ9AyovzS8sz-dhjCJoQTwXKI0G_IvcMy4Ae80Woou5SyeMyJ8faJd2ifPR-JsuSJofMIduyfoEHUcOsLarOTOnR162PFI";
+        ValueOperations<String, String> operations = redisTemplate.opsForValue();
+        String token = operations.get("token");
 
         if (token == null) {
             return;
