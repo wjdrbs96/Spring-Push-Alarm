@@ -8,7 +8,8 @@ import com.google.firebase.messaging.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.*;
+import org.springframework.data.redis.core.ListOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -16,10 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -37,7 +35,7 @@ public class FirebasePushNotificationService implements PushNotificationService 
 
     @PostConstruct
     public void init() {
-        try (InputStream serviceAccount = Files.newInputStream(Paths.get(accountPath))) {
+        try (InputStream serviceAccount = Files.newInputStream(Paths.get(System.getProperty("user.dir") + accountPath))) {
             FirebaseOptions options = new FirebaseOptions.Builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount)).build();
 
@@ -46,8 +44,9 @@ public class FirebasePushNotificationService implements PushNotificationService 
                 log.info("Firebase Cloud Messaging 서비스를 성공적으로 초기화하였습니다.");
             }
 
-        } catch (IOException e) {
 
+        } catch (IOException e) {
+            log.error("cannot initial firebase " + e.getMessage());
         }
     }
 

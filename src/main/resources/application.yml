@@ -14,4 +14,4 @@ mybatis:
 
 fcm:
   account:
-    path: "/Users/choejeong-gyun/Documents/Spring-FCM/src/main/resources/firebase.json"
+    path: "/src/main/resources/firebase.json"
