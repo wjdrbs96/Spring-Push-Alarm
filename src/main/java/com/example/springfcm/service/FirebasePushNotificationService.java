@@ -4,15 +4,11 @@ import com.example.springfcm.dto.PushNotificationRequest;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.Message;
-import com.google.firebase.messaging.WebpushConfig;
-import com.google.firebase.messaging.WebpushNotification;
+import com.google.firebase.messaging.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.*;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -20,6 +16,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * created by jg 2021/05/02
@@ -62,17 +63,48 @@ public class FirebasePushNotificationService implements PushNotificationService 
 
     @Override
     public void sendPushNotification(PushNotificationRequest pushNotificationRequest) {
-        ValueOperations<String, String> operations = redisTemplate.opsForValue();
-        String token = operations.get("token");
+        final ListOperations<String, String> stringListOperations = redisTemplate.opsForList();
 
-        if (token == null) {
-            return;
+//        String token = "cYm9R_j7ReuSFz6Z2xZT6r:APA91bFgFquTCqTFXFYDK69kNrS_dRTCxdIPw7frEyG8IfcQ9AyovzS8sz-dhjCJoQTwXKI0G_IvcMy4Ae80Woou5SyeMyJ8faJd2ifPR-JsuSJofMIduyfoEHUcOsLarOTOnR162PFI";
+//        String token1 = "ep3BfifTSjuBtVR-QxipaQ:APA91bGCkxiiqERcuRHEgXr5P-QF711W0LxfCpwzW8N9dZUOnY30MNkgawAI9lirLflubWs3n224Osn4spauPsgPkifqsfcGhAgL8VKRTz91dewL4wCV0dZnAVBRf71SIMxI9OygFWAr";
+
+//        if (token == null) {
+//            return;
+//        }
+
+        List<String> tokens = stringListOperations.range("token", 0, 3);
+
+        List<Message> messages = tokens.stream().map(token -> Message.builder()
+                .putData("title", pushNotificationRequest.getTitle())
+                .putData("message", pushNotificationRequest.getMessage())
+                .setToken(token)
+                .build()).collect(Collectors.toList());
+
+//
+//
+//        Message pushMessage1 = writePushMessage(pushNotificationRequest, token);
+//        Message pushMessage2 = writePushMessage(pushNotificationRequest, token1);
+//        List<Message> list = new ArrayList<>();
+//        list.add(pushMessage1);
+//        list.add(pushMessage2);
+//        writePushMessage(pushNotificationRequest, token1);
+//        try {
+//            FirebaseMessaging.getInstance().sendAll(list);
+//        } catch (FirebaseMessagingException e) {
+//            log.error("Error");
+//        }
+
+        // 여러명 한테 보내기
+        BatchResponse response;
+        try {
+            response = FirebaseMessaging.getInstance().sendAll(messages);
+            log.info("Sent message: " + response);
+        } catch (FirebaseMessagingException e) {
+            log.error("cannot send to member push message. error info : {}", e.getMessage());
         }
-
-        Message pushMessage = writePushMessage(pushNotificationRequest, token);
-        FirebaseMessaging.getInstance().sendAsync(pushMessage);
     }
 
+    // 한명한테 보내기
     private Message writePushMessage(PushNotificationRequest pushNotificationRequest, String token) {
         return Message.builder()
                 .setWebpushConfig(WebpushConfig.builder()
